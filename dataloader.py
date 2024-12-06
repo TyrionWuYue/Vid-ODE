@@ -23,26 +23,8 @@ class Dataset_base(Dataset):
         # Print out Dataset setting
         print(f"[Info] Dataset:{self.opt.dataset}")
     
-    def sample_regular_interp(self, images):
-        seq_len = images.shape[0]
-        assert self.sample_size <= seq_len, "[Error] sample_size > seq_len"
-        
-        win_start = np.random.randint(0, seq_len - self.sample_size + 1) if self.train else 0
-        
-
-        if self.opt.phase == 'train':
-            input_images = images[np.arange(win_start, win_start + self.sample_size, 2), ...]
-            mask = torch.ones((self.sample_size // 2, 1))
-        else:
-            input_images = images[win_start: win_start + self.sample_size]
-            mask = torch.zeros((self.sample_size, 1))
-            mask[np.arange(0, self.sample_size, 2), :] = 1
-
-        mask = mask.type(torch.FloatTensor).to(self.device)
-        return input_images, mask
-    
     def sample_regular_extrap(self, images):
-        """ Same as sample_regular_interp, may be different when utils.sampling """
+        """ Same as sample_regular_interp, may be different when utils.sample_regular_extrap """
 
         seq_len = images.shape[0]
         assert self.sample_size <= seq_len, "[Error] sample_size > seq_len"
@@ -56,13 +38,6 @@ class Dataset_base(Dataset):
         
         return input_images, mask
     
-    
-    def sampling(self, images):
-        
-        # Sampling
-        input_images, mask = self.sample_regular_extrap(images=images)
-        
-        return input_images, mask
     
 def remove_files_under_sample_size(image_path, threshold):
 
@@ -117,8 +92,8 @@ class HurricaneVideoDataset(Dataset_base):
         images = np.load(os.path.join(self.image_path, self.image_list[index]))
         images = images[..., :self.nc]
         
-        # Sampling
-        input_images, mask = self.sampling(images=images)
+        # sample_regular_extrap
+        input_images, mask = self.sample_regular_extrap(images=images)
         
         # Transform
         input_images = self.vtrans(input_images)  # return (b, c, h, w)
@@ -171,8 +146,8 @@ class VideoDataset(Dataset_base):
         
         images = np.load(os.path.join(self.image_path, self.image_list[index]))
         
-        # Sampling
-        input_images, mask = self.sampling(images=images)
+        # sample_regular_extrap
+        input_images, mask = self.sample_regular_extrap(images=images)
 
         # Transform
         input_images = self.vtrans(input_images)  # return (b, c, h, w)
