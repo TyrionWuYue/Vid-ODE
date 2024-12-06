@@ -43,7 +43,6 @@ def get_opt():
     parser.add_argument('--input_norm', action='store_true', default=False)
     
     parser.add_argument('--run_backwards', action='store_true', default=True)
-    parser.add_argument('--irregular', action='store_true', default=False, help="Train with irregular time-steps")
 
     # Test argument:
     parser.add_argument('--split_time', default=10, type=int, help='Split time for extrapolation or interpolation ')
@@ -73,7 +72,7 @@ def get_opt():
         # Modify Desc
         now = datetime.datetime.now()
         month_day = f"{now.month:02d}{now.day:02d}"
-        opt.name = f"dataset{opt.dataset}_irregular{opt.irregular}_runBack{opt.run_backwards}_{opt.name}"
+        opt.name = f"dataset{opt.dataset}_runBack{opt.run_backwards}_{opt.name}"
         opt.log_dir = utils.create_folder_ifnotexist(LOG_PATH / month_day / opt.name)
         opt.checkpoint_dir = utils.create_folder_ifnotexist(CKPT_PATH / month_day / opt.name)
 
@@ -157,15 +156,6 @@ def train(opt, netG, loader_objs, device):
             input_real = batch_dict["observed_data"]
 
             # Filter out mask
-            if opt.irregular:
-                b, _, c, h, w = real.size()
-                observed_mask = batch_dict["observed_mask"]
-                mask_predicted_data = batch_dict["mask_predicted_data"]
-
-                selected_timesteps = int(observed_mask[0].sum())
-                input_real = input_real[observed_mask.squeeze(-1).byte(), ...].view(b, selected_timesteps, c, h, w)
-                real = real[mask_predicted_data.squeeze(-1).byte(), ...].view(b, selected_timesteps, c, h, w)
-
             loss_netD = opt.lamb_adv * netD_seq.netD_adv_loss(real, fake, input_real)
             loss_netD += opt.lamb_adv * netD_img.netD_adv_loss(real, fake, None)
 

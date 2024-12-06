@@ -31,24 +31,9 @@ def save_test_images(opt, preds, batch_dict, path, index):
 
 
 def make_save_sequence(opt, batch_dict, res):
-    """ 4 cases: (interp, extrap) | (regular, irregular) """
     
     b, t, c, h, w = batch_dict['observed_data'].size()
 
-    # Filter out / Select by mask
-    if opt.irregular:
-        observed_mask = batch_dict["observed_mask"]
-        mask_predicted_data = batch_dict["mask_predicted_data"]
-        selected_timesteps = int(observed_mask[0].sum())
-        
-        
-        if opt.dataset in ['hurricane']:
-            batch_dict['observed_data'] = batch_dict['observed_data'][observed_mask.squeeze(-1).byte(), ...].view(b, selected_timesteps, c, h, w)
-            batch_dict['data_to_predict'] = batch_dict['data_to_predict'][mask_predicted_data.squeeze(-1).byte(), ...].view(b, selected_timesteps, c, h, w)
-        else:
-            batch_dict['observed_data'] = batch_dict['observed_data'] * observed_mask.unsqueeze(-1).unsqueeze(-1)
-            batch_dict['data_to_predict'] = batch_dict['data_to_predict'] * mask_predicted_data.unsqueeze(-1).unsqueeze(-1)
-        
     # Make sequence to save
     pred = res['pred_y'].cpu().detach()
     
