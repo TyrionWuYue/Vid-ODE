@@ -52,12 +52,9 @@ def make_save_sequence(opt, batch_dict, res):
     # Make sequence to save
     pred = res['pred_y'].cpu().detach()
     
-    if opt.extrap:
-        inputs = batch_dict['observed_data'].cpu().detach()
-        gt_to_predict = batch_dict['data_to_predict'].cpu().detach()
-        gt = torch.cat([inputs, gt_to_predict], dim=1)
-    else:
-        gt = batch_dict['data_to_predict'].cpu().detach()
+    inputs = batch_dict['observed_data'].cpu().detach()
+    gt_to_predict = batch_dict['data_to_predict'].cpu().detach()
+    gt = torch.cat([inputs, gt_to_predict], dim=1)
 
     time_steps = None
 

@@ -113,7 +113,7 @@ class Discriminator(nn.Module):
     def rearrange_seq_interp(self, real, fake, input_real, only_fake=True):
     
         b, t, c, h, w = fake.size()
-        mask = torch.eye(t).float().cuda()
+        mask = torch.eye(t).float().to(self.device)
         fake_seqs = []
         for i in range(t):
             reshaped_mask = mask[i].view(1, -1, 1, 1, 1)
@@ -138,14 +138,10 @@ def create_netD(opt, device):
     
     # Model
     seq_len = opt.sample_size // 2
-    if opt.irregular and not opt.extrap:
-        seq_len = opt.sample_size
-    
-    if opt.extrap:
-        seq_len += 1
+    seq_len += 1
 
-    netD_img = Discriminator(in_ch=3, device=device, seq=False, is_extrap=opt.extrap).to(device)
-    netD_seq = Discriminator(in_ch=3 * (seq_len), device=device, seq=True, is_extrap=opt.extrap).to(device)
+    netD_img = Discriminator(in_ch=3, device=device, seq=False).to(device)
+    netD_seq = Discriminator(in_ch=3 * (seq_len), device=device, seq=True).to(device)
 
     # Optimizer
     optimizer_netD = optim.Adamax(list(netD_img.parameters()) + list(netD_seq.parameters()), lr=opt.lr)

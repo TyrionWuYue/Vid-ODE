@@ -158,24 +158,6 @@ def split_data_extrap(data_dict, opt):
     return split_dict
 
 
-def split_data_interp(data_dict, opt):
-
-    split_dict = {"observed_data": data_dict["data"].clone(),
-                  "observed_tp": data_dict["time_steps"].clone(),
-                  "data_to_predict": data_dict["data"].clone(),
-                  "tp_to_predict": data_dict["time_steps"].clone(),
-                  "observed_mask": None,
-                  "mask_predicted_data": None}
-
-    if "mask" in data_dict and data_dict["mask"] is not None:
-        split_dict["observed_mask"] = data_dict["mask"].clone()
-        split_dict["mask_predicted_data"] = data_dict["mask"].clone()
-    
-    split_dict["mode"] = "interp"
-    
-    return split_dict
-
-
 def add_mask(data_dict):
     data = data_dict["observed_data"]
     mask = data_dict["observed_mask"]
@@ -189,17 +171,11 @@ def add_mask(data_dict):
 def split_and_subsample_batch(data_dict, opt, data_type="train"):
     if data_type == "train":
         # Training set
-        if opt.extrap:
-            processed_dict = split_data_extrap(data_dict, opt)
-        else:
-            processed_dict = split_data_interp(data_dict, opt)
+        processed_dict = split_data_extrap(data_dict, opt)
     
     else:
         # Test set
-        if opt.extrap:
-            processed_dict = split_data_extrap(data_dict, opt)
-        else:
-            processed_dict = split_data_interp(data_dict, opt)
+        processed_dict = split_data_extrap(data_dict, opt)
     
     # add mask
     processed_dict = add_mask(processed_dict)

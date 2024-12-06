@@ -44,9 +44,6 @@ def get_opt():
     
     parser.add_argument('--run_backwards', action='store_true', default=True)
     parser.add_argument('--irregular', action='store_true', default=False, help="Train with irregular time-steps")
-    
-    # Need to be tested...
-    parser.add_argument('--extrap', action='store_true', default=False, help="Set extrapolation mode. If this flag is not set, run interpolation mode.")
 
     # Test argument:
     parser.add_argument('--split_time', default=10, type=int, help='Split time for extrapolation or interpolation ')
@@ -76,7 +73,7 @@ def get_opt():
         # Modify Desc
         now = datetime.datetime.now()
         month_day = f"{now.month:02d}{now.day:02d}"
-        opt.name = f"dataset{opt.dataset}_extrap{opt.extrap}_irregular{opt.irregular}_runBack{opt.run_backwards}_{opt.name}"
+        opt.name = f"dataset{opt.dataset}_irregular{opt.irregular}_runBack{opt.run_backwards}_{opt.name}"
         opt.log_dir = utils.create_folder_ifnotexist(LOG_PATH / month_day / opt.name)
         opt.checkpoint_dir = utils.create_folder_ifnotexist(CKPT_PATH / month_day / opt.name)
 
@@ -172,16 +169,16 @@ def train(opt, netG, loader_objs, device):
             loss_netD = opt.lamb_adv * netD_seq.netD_adv_loss(real, fake, input_real)
             loss_netD += opt.lamb_adv * netD_img.netD_adv_loss(real, fake, None)
 
-            loss_adv_netG = opt.lamb_adv * netD_seq.netG_adv_loss(fake, input_real)
-            loss_adv_netG += opt.lamb_adv * netD_img.netG_adv_loss(fake, None)
-            loss_netG += loss_adv_netG
-
             # Train D
             optimizer_netD.zero_grad()
             loss_netD.backward()
             optimizer_netD.step()
             
             # Train G
+            loss_adv_netG = opt.lamb_adv * netD_seq.netG_adv_loss(fake, input_real)
+            loss_adv_netG += opt.lamb_adv * netD_img.netG_adv_loss(fake, None)
+            loss_netG += loss_adv_netG
+
             optimizer_netG.zero_grad()
             loss_netG.backward()
             optimizer_netG.step()
@@ -204,10 +201,7 @@ def train(opt, netG, loader_objs, device):
                 
                 gt, pred, time_steps = visualize.make_save_sequence(opt, batch_dict, res)
 
-                if opt.extrap:
-                    visualize.save_extrap_images(opt=opt, gt=gt, pred=pred, path=opt.train_image_path, total_step=total_step)
-                else:
-                    visualize.save_interp_images(opt=opt, gt=gt, pred=pred, path=opt.train_image_path, total_step=total_step)
+                visualize.save_extrap_images(opt=opt, gt=gt, pred=pred, path=opt.train_image_path, total_step=total_step)
             
             total_step += 1
             
@@ -234,10 +228,7 @@ def test(netG, epoch, test_dataloader, opt, n_test_batches):
     
                 gt, pred, time_steps = visualize.make_save_sequence(opt, batch_dict, res)
 
-                if opt.extrap:
-                    visualize.save_extrap_images(opt=opt, gt=gt, pred=pred, path=opt.test_image_path, total_step=100 * (epoch + 1) + i)
-                else:
-                    visualize.save_interp_images(opt=opt, gt=gt, pred=pred, path=opt.test_image_path, total_step=100 * (epoch + 1) + i)
+                visualize.save_extrap_images(opt=opt, gt=gt, pred=pred, path=opt.test_image_path, total_step=100 * (epoch + 1) + i)
                     
         test_losses /= n_test_batches
 

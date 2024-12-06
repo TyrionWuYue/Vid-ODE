@@ -103,7 +103,7 @@ class VidODE(nn.Module):
         pred_t_len = len(time_steps_to_predict)
         
         ##### Skip connection forwarding
-        skip_image = truth[:, -1, ...] if self.opt.extrap else truth[:, 0, ...]
+        skip_image = truth[:, -1, ...]
         skip_conn_embed = self.encoder(skip_image).view(b, -1, h // resize, w // resize)
         
         ##### Conv encoding
@@ -137,7 +137,7 @@ class VidODE(nn.Module):
         grid = torch.cat([grid_x, grid_y], 3).float().to(self.device)  # [b, h, w, 2]
 
         # Warping
-        last_frame = truth[:, -1, ...] if self.opt.extrap else truth[:, 0, ...]
+        last_frame = truth[:, -1, ...]
         warped_pred_x = self.get_warped_images(pred_flows=pred_flows, start_image=last_frame, grid=grid)
         warped_pred_x = torch.cat(warped_pred_x, dim=1)  # regular b, t, 6, h, w / irregular b, t * ratio, 6, h, w
 
@@ -164,7 +164,7 @@ class VidODE(nn.Module):
             selected_truth = truth
         else:
             selected_time_len = int(mask[0].sum())
-            selected_truth = truth[mask.squeeze(-1).byte()].view(b, selected_time_len, c, h, w)
+            selected_truth = truth[mask.squeeze(-1).bool()].view(b, selected_time_len, c, h, w)
         loss = torch.sum(torch.abs(pred_x - selected_truth)) / (b * selected_time_len * c * h * w)
         return loss
     
@@ -174,7 +174,7 @@ class VidODE(nn.Module):
         data_diff = data[:, 1:, ...] - data[:, :-1, ...]
         b, _, c, h, w = data_diff.size()
         selected_time_len = int(mask[0].sum())
-        masked_data_diff = data_diff[mask.squeeze(-1).byte()].view(b, selected_time_len, c, h, w)
+        masked_data_diff = data_diff[mask.squeeze(-1).bool()].view(b, selected_time_len, c, h, w)
         
         return masked_data_diff
 
@@ -201,7 +201,7 @@ class VidODE(nn.Module):
         time_iter = range(pred_time_steps)
         
         if mask.size(1) == sol_out.size(1):
-            sol_out = sol_out[mask.squeeze(-1).byte()].view(b, pred_time_steps, c, h, w)
+            sol_out = sol_out[mask.squeeze(-1).bool()].view(b, pred_time_steps, c, h, w)
         
         for t in time_iter:
             cur_and_prev = torch.cat([sol_out[:, t, ...], prev], dim=1)
@@ -231,7 +231,7 @@ class VidODE(nn.Module):
             pred_flow = torch.cat([pred_flow[:, 0:1, :, :] / ((w - 1.0) / 2.0), pred_flow[:, 1:2, :, :] / ((h - 1.0) / 2.0)], dim=1)
             pred_flow = pred_flow.permute(0, 2, 3, 1)   # b, h, w, 2
             flow_grid = grid.clone() + pred_flow.clone()# b, h, w, 2
-            warped_x = nn.functional.grid_sample(last_frame, flow_grid, padding_mode="border")
+            warped_x = nn.functional.grid_sample(last_frame, flow_grid, padding_mode="border", align_corners=False)
             pred_x += [warped_x.unsqueeze(1)]           # b, 1, 3, h, w
             last_frame = warped_x.clone()
         
@@ -258,10 +258,7 @@ class VidODE(nn.Module):
                                        pred_x=pred_x,
                                        mask=batch_dict["mask_predicted_data"]))
 
-        if not self.opt.extrap:
-            init_image = batch_dict["observed_data"][:, 0, ...]
-        else:
-            init_image = batch_dict["observed_data"][:, -1, ...]
+        init_image = batch_dict["observed_data"][:, -1, ...]
 
         data = torch.cat([init_image.unsqueeze(1), batch_dict["data_to_predict"]], dim=1)
         data_diff = self.get_diff(data=data, mask=batch_dict["mask_predicted_data"])

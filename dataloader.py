@@ -23,8 +23,7 @@ class Dataset_base(Dataset):
         
         # Print out Dataset setting
         regularity = "irregular" if self.opt.irregular else "regular"
-        task = "extrapolation" if self.opt.extrap else "interpolation"
-        print(f"[Info] Dataset:{self.opt.dataset} / regularity:{regularity} / task:{task}")
+        print(f"[Info] Dataset:{self.opt.dataset} / regularity:{regularity}")
     
     def sample_regular_interp(self, images):
         seq_len = images.shape[0]
@@ -131,12 +130,8 @@ class Dataset_base(Dataset):
     def sampling(self, images):
         
         # Sampling
-        if not self.irregular and not self.opt.extrap:
-            input_images, mask = self.sample_regular_interp(images=images)
-        elif not self.irregular and self.opt.extrap:
+        if not self.irregular:
             input_images, mask = self.sample_regular_extrap(images=images)
-        elif self.irregular and not self.opt.extrap:
-            input_images, mask = self.sample_irregular_interp(images=images)
         else:
             input_images, mask = self.sample_irregular_extrap(images=images)
         
@@ -276,11 +271,7 @@ def parse_datasets(opt, device):
     if opt.irregular:
         time_steps = np.arange(0, opt.window_size) / opt.window_size
     else:
-        if opt.extrap:
-            time_steps = np.arange(0, opt.sample_size) / opt.sample_size
-        else:
-            time_steps = np.arange(0, opt.sample_size // 2) / (opt.sample_size // 2)
-            # time_steps = np.arange(0, opt.sample_size) / opt.sample_size
+        time_steps = np.arange(0, opt.sample_size) / opt.sample_size
     
     time_steps = torch.from_numpy(time_steps).type(torch.FloatTensor).to(device)
     
