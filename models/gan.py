@@ -26,13 +26,12 @@ class ConvNormAct(nn.Module):
 
 class Discriminator(nn.Module):
     
-    def __init__(self, in_ch, device, seq=False, is_extrap=True):
+    def __init__(self, in_ch, device, seq=False):
         
         super(Discriminator, self).__init__()
         
         self.device = device
         self.seq = seq
-        self.is_extrap = is_extrap
         
         self.layer_1 = nn.Sequential(
             nn.Conv2d(in_ch, 64, kernel_size=4, stride=2, padding=1, bias=False),
@@ -52,10 +51,8 @@ class Discriminator(nn.Module):
     def netD_adv_loss(self, real, fake, input_real):
         
         if self.seq:
-            if self.is_extrap:
-                real, fake = self.rearrange_seq(real, fake, input_real, only_fake=False)
-            else:
-                real, fake = self.rearrange_seq_interp(real, fake, input_real, only_fake=False)
+            real, fake = self.rearrange_seq(real, fake, input_real, only_fake=False)
+
         elif not self.seq:
             b, t, c, h, w = fake.size()
             real = real.contiguous().view(-1, c, h, w)
@@ -75,10 +72,8 @@ class Discriminator(nn.Module):
     def netG_adv_loss(self, fake, input_real):
         b, t, c, h, w = fake.size()
         if self.seq:
-            if self.is_extrap:
-                fake = self.rearrange_seq(None, fake, input_real, only_fake=True)
-            else:
-                fake = self.rearrange_seq_interp(None, fake, input_real, only_fake=True)
+            fake = self.rearrange_seq(None, fake, input_real, only_fake=True)
+
         elif not self.seq:
             fake = fake.contiguous().view(-1, c, h, w)
         
@@ -108,29 +103,6 @@ class Discriminator(nn.Module):
             real_seqs += [real_seq]
         real_seqs = torch.cat(real_seqs, dim=0).view(b * t, -1, h, w)
         
-        return real_seqs, fake_seqs
-
-    def rearrange_seq_interp(self, real, fake, input_real, only_fake=True):
-    
-        b, t, c, h, w = fake.size()
-        mask = torch.eye(t).float().to(self.device)
-        fake_seqs = []
-        for i in range(t):
-            reshaped_mask = mask[i].view(1, -1, 1, 1, 1)
-            fake_seq = (1 - reshaped_mask) * input_real + reshaped_mask * fake
-            fake_seqs += [fake_seq]
-        fake_seqs = torch.cat(fake_seqs, dim=0).view(b * t, -1, h, w)
-    
-        if only_fake:
-            return fake_seqs
-    
-        real_seqs = []
-        for i in range(t):
-            reshaped_mask = mask[i].view(1, -1, 1, 1, 1)
-            real_seq = (1 - reshaped_mask) * input_real + reshaped_mask * real
-            real_seqs += [real_seq]
-        real_seqs = torch.cat(real_seqs, dim=0).view(b * t, -1, h, w)
-    
         return real_seqs, fake_seqs
 
 
