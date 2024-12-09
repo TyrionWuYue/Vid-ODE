@@ -49,7 +49,7 @@ def get_opt():
     
     # Log
     parser.add_argument("--ckpt_save_freq", type=int, default=5000)
-    parser.add_argument("--log_print_freq", type=int, default=10)
+    parser.add_argument("--log_print_freq", type=int, default=1000)
     parser.add_argument("--image_print_freq", type=int, default=1000)
     
     # Path (Data & Checkpoint & Tensorboard)
