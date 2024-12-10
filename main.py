@@ -12,6 +12,7 @@ import numpy as np
 from dataloader import parse_datasets
 from models.conv_odegru import *
 from models.gan import *
+from mymodel.DDGODE import DDGODE
 from tester import Tester
 import utils
 import visualize
@@ -58,6 +59,7 @@ def get_opt():
     parser.add_argument('--checkpoint_dir', type=str, default='./checkpoints', help='save checkpoint infos')
     parser.add_argument('--test_dir', type=str, help='load saved model')
     
+    parser.add_argument('--my_model', action='store_true', default=False)
     opt = parser.parse_args()
 
     opt.input_dim = 3
@@ -109,7 +111,10 @@ def main():
     loader_objs = parse_datasets(opt, device)
     
     # Model
-    model = VidODE(opt, device)
+    if opt.my_model:
+        model = DDGODE(opt, device)
+    else:
+        model = VidODE(opt, device)
     
     # Set tester
     if opt.phase != 'train':

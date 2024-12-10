@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=0 python main.py --phase test_met --dataset kth --test_dir CHECKPOINT_DIR
